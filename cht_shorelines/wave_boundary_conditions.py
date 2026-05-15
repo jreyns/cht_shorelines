@@ -7,6 +7,7 @@ import pandas as pd
 
 from .io import dataframe_from_records, yyyymmddhhmm
 
+
 class ShorelinesWaveBoundaryConditions:
     def __init__(self, model=None):
         self.model = model
@@ -35,7 +36,9 @@ class ShorelinesWaveBoundaryConditions:
 
     def set_timeseries(self, data, file_name="waves.wvt"):
         """Set a single wave time series with columns time, hs, tp, dir."""
-        self.wave_timeseries = {file_name: dataframe_from_records(data, ["time", "hs", "tp", "dir"])}
+        self.wave_timeseries = {
+            file_name: dataframe_from_records(data, ["time", "hs", "tp", "dir"])
+        }
         self.wave_climate = None
         self.wave_climate_file = file_name
         if self.model is not None:
@@ -104,7 +107,9 @@ class ShorelinesWaveBoundaryConditions:
 
     def write(self):
         if self.wave_climate is not None:
-            self._write_wave_climate(self.root / (self.wave_climate_file or "waves.wvc"))
+            self._write_wave_climate(
+                self.root / (self.wave_climate_file or "waves.wvc")
+            )
 
         for file_name, data in self.wave_timeseries.items():
             self._write_wave_timeseries(self.root / file_name, data)
@@ -116,7 +121,9 @@ class ShorelinesWaveBoundaryConditions:
                 self.model.input.variables.wvcfile = list_file
 
         if self.water_levels is not None:
-            self._write_water_levels(self.root / (self.water_level_file or "waterlevels.wat"))
+            self._write_water_levels(
+                self.root / (self.water_level_file or "waterlevels.wat")
+            )
 
         if self.wind is not None:
             self._write_wind(self.root / (self.wind_file or "wind.wnd"))
@@ -164,7 +171,9 @@ class ShorelinesWaveBoundaryConditions:
                 )
 
     def _write_water_levels(self, path: Path):
-        optional = [col for col in ["htide", "vtide", "refdep"] if col in self.water_levels]
+        optional = [
+            col for col in ["htide", "vtide", "refdep"] if col in self.water_levels
+        ]
         rows = []
         for row in self.water_levels.itertuples(index=False):
             values = [yyyymmddhhmm(row.time), row.swl]
