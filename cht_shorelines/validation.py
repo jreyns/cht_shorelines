@@ -1,7 +1,7 @@
 from typing import List, Union
 
 import numpy as np
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class GridSpec(BaseModel):
@@ -12,10 +12,15 @@ class GridSpec(BaseModel):
     Option 2: [np.ndarray(Nx2), np.ndarray(Mx2), ...]
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     grids: Union[List[List[float]], List[np.ndarray]]
 
     @field_validator("grids")
-    def check_format(cls, v):
+    def check_format(
+        cls,
+        v: Union[List[List[float]], List[np.ndarray]],
+    ) -> Union[List[List[float]], List[np.ndarray]]:
         # Option 1 — linear grids (list of [x1,y1,x2,y2])
         if all(
             isinstance(g, list)

@@ -2,21 +2,22 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
-from typing import List, Union
+from typing import Any, List, Union
 
 import numpy as np
 
-from .io import write_runfile
+from .io import PathLike, normalize_optional_file_name, write_runfile
 
 
 class Variables:
-    def __init__(self):
+    def __init__(self) -> None:
         self.hso = 1
         self.tper = 6
         self.phiw0 = 330
         self.spread = 90
         self.dirspr = 12
         self.wvcfile = ""
+        self.waveclimfile = ""
         self.hsbackground = 0
         self.ddeep = 25
         self.dnearshore = 8
@@ -52,6 +53,7 @@ class Variables:
         self.d50 = 2.0e-4
         self.d90 = 3.0e-4
         self.dgr: Union[List[float], str] = []
+        self.sedinput: Union[List[float], str] = []
         self.multi = 0
         self.bedthick = 0.2
         self.bedwidth = 50
@@ -185,6 +187,7 @@ class Variables:
         self.csmodel = ""
         ## --------------------------- wind conditions ----------------------------
         self.wndfile = ""
+        self.Windclimfile = ""
         self.cd = 0.002
         self.uz = 8
         self.z = 10
@@ -193,7 +196,10 @@ class Variables:
         self.runupform = "Stockdon"
         self.runupfactor = 1
         self.watfile = ""
+        self.watclimfile = ""
+        self.watlocfile = ""
         self.wvdfile = ""
+        self.WaveLocfile = ""
         self.swl0 = 0
         ##------------------------- Sediment limitations --------------------------
         self.sedlim = False
@@ -307,10 +313,14 @@ class Variables:
 
 
 class ShorelinesInput:
-    def __init__(self, root=None, runfile=None):
+    def __init__(
+        self,
+        root: PathLike | None = None,
+        runfile: PathLike | None = None,
+    ) -> None:
         self.variables = Variables()
         self.root = Path(root) if root is not None else Path.cwd()
-        self.runfile = runfile
+        self.runfile = normalize_optional_file_name(runfile, argument="runfile")
 
     @property
     def runfile_name(self) -> str:
@@ -322,17 +332,17 @@ class ShorelinesInput:
     def runfile_path(self) -> Path:
         return self.root / self.runfile_name
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         return dict(vars(self.variables))
 
-    def write(self, file_name=None):
+    def write(self, file_name: PathLike | None = None) -> None:
         if file_name is not None:
-            self.runfile = str(file_name)
+            self.runfile = normalize_optional_file_name(file_name, argument="file_name")
         write_runfile(self.runfile_path, self.to_dict())
 
-    def read(self, file_name=None):
+    def read(self, file_name: PathLike | None = None) -> None:
         if file_name is not None:
-            self.runfile = str(file_name)
+            self.runfile = normalize_optional_file_name(file_name, argument="file_name")
         path = self.runfile_path
         if not path.exists():
             raise FileNotFoundError(path)
@@ -347,7 +357,7 @@ class ShorelinesInput:
             setattr(self.variables, key, _parse_matlab_value(value))
 
 
-def _parse_matlab_value(value: str):
+def _parse_matlab_value(value: str) -> Any:
     if value in {"[]", "{}"}:
         return []
     if value.lower() in {"nan", "+nan"}:
@@ -371,7 +381,7 @@ def _parse_matlab_value(value: str):
             return value
 
 
-def _parse_matrix(value: str):
+def _parse_matrix(value: str) -> list[object] | list[list[object]]:
     if not value.strip():
         return []
     rows = []
@@ -382,7 +392,7 @@ def _parse_matrix(value: str):
     return rows
 
 
-def _parse_cell(value: str):
+def _parse_cell(value: str) -> list[list[object]]:
     if not value.strip():
         return []
     rows = []

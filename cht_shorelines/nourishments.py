@@ -1,12 +1,27 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 
-from .io import dataframe_from_records, write_numeric_table, yyyymmdd
+import pandas as pd
+
+from .io import (
+    DatetimeLike,
+    NumericTableLike,
+    PathLike,
+    RecordDataLike,
+    ShorelinesModelProtocol,
+    coerce_numeric_table,
+    dataframe_from_records,
+    normalize_file_name,
+    read_numeric_table,
+    write_numeric_table,
+    yyyymmdd,
+)
 
 
 class ShorelinesNourishments:
-    def __init__(self, model=None):
+    def __init__(self, model: ShorelinesModelProtocol | None = None) -> None:
         self.model = model
         self.nourishments = None
         self.nourishment_file = None
@@ -19,7 +34,11 @@ class ShorelinesNourishments:
             return Path(self.model.path)
         return Path.cwd()
 
-    def set_nourishments(self, data, file_name="nourishments.nor"):
+    def set_nourishments(
+        self,
+        data: RecordDataLike,
+        file_name: PathLike = "nourishments.nor",
+    ) -> None:
         """Set nourishment rows.
 
         Required columns: xstart, ystart, xend, yend, tstart, tend, totalvolume.
@@ -28,22 +47,60 @@ class ShorelinesNourishments:
         self.nourishments = dataframe_from_records(
             data, ["xstart", "ystart", "xend", "yend", "tstart", "tend", "totalvolume"]
         )
-        self.nourishment_file = file_name
+        self.nourishment_file = normalize_file_name(file_name)
         if self.model is not None:
             variables = self.model.input.variables
             variables.nourish = 1
-            variables.norfile = file_name
-            variables.ldbnourish = file_name
+            variables.norfile = self.nourishment_file
+            variables.ldbnourish = self.nourishment_file
 
-    def set_shoreface_nourishments(self, data, file_name="shoreface.fnor"):
-        self.shoreface_nourishments = data
-        self.shoreface_file = file_name
+    def set_shoreface_nourishments(
+        self,
+        data: NumericTableLike,
+        file_name: PathLike = "shoreface.fnor",
+    ) -> None:
+        self.shoreface_nourishments = coerce_numeric_table(data, argument="data")
+        self.shoreface_file = normalize_file_name(file_name)
         if self.model is not None:
             variables = self.model.input.variables
             variables.fnourish = 1
-            variables.fnorfile = file_name
+            variables.fnorfile = self.shoreface_file
 
-    def write(self):
+    def read(self) -> None:
+        variables = getattr(self.model.input, "variables", None) if self.model else None
+        if variables is None:
+            return
+        nourishment_file = ""
+        if getattr(variables, "norfile", ""):
+            nourishment_file = variables.norfile
+        elif str(getattr(variables, "ldbnourish", "")).lower().endswith(".nor"):
+            nourishment_file = variables.ldbnourish
+        if nourishment_file:
+            path = self.root / nourishment_file
+            if path.exists():
+                data = read_numeric_table(path)
+                if data.size:
+                    self.nourishments = pd.DataFrame(
+                        {
+                            "xstart": data[:, 0],
+                            "ystart": data[:, 1],
+                            "xend": data[:, 2],
+                            "yend": data[:, 3],
+                            "tstart": [str(int(value)) for value in data[:, 4]],
+                            "tend": [str(int(value)) for value in data[:, 5]],
+                            "totalvolume": data[:, 6],
+                        }
+                    )
+                    self.nourishment_file = nourishment_file
+
+        shoreface_file = getattr(variables, "fnorfile", "")
+        if shoreface_file:
+            path = self.root / shoreface_file
+            if path.exists():
+                self.shoreface_nourishments = read_numeric_table(path)
+                self.shoreface_file = shoreface_file
+
+    def write(self) -> None:
         if self.nourishments is not None:
             file_name = self.nourishment_file or "nourishments.nor"
             rows = []
@@ -75,7 +132,7 @@ class ShorelinesNourishments:
                 self.model.input.variables.fnorfile = file_name
 
 
-def _date_or_int(value):
+def _date_or_int(value: DatetimeLike | int) -> int:
     if isinstance(value, int):
         return value
     text = str(value)
@@ -84,7 +141,11 @@ def _date_or_int(value):
     return yyyymmdd(value)
 
 
-def _write_nor(path: Path, rows, header: str):
+def _write_nor(
+    path: Path,
+    rows: Iterable[Sequence[float | int]],
+    header: str,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as fid:
         fid.write(header + "\n")
