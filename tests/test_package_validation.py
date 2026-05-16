@@ -7,7 +7,13 @@ pytest.importorskip("pydantic")
 pytest.importorskip("pyproj")
 
 import cht_shorelines
-from cht_shorelines import Shorelines, ShorelinesClimateChange, ShorelinesRunup, ShorelinesTide
+from cht_shorelines import (
+    Shorelines,
+    ShorelinesClimateChange,
+    ShorelinesDunes,
+    ShorelinesRunup,
+    ShorelinesTide,
+)
 from cht_shorelines.output import ShorelinesOutput
 from cht_shorelines.validation import GridSpec
 
@@ -16,6 +22,7 @@ def test_package_exports_and_output_class():
     assert "Shorelines" in cht_shorelines.__all__
     assert Shorelines is cht_shorelines.Shorelines
     assert ShorelinesClimateChange is cht_shorelines.ShorelinesClimateChange
+    assert ShorelinesDunes is cht_shorelines.ShorelinesDunes
     assert ShorelinesRunup is cht_shorelines.ShorelinesRunup
     assert ShorelinesTide is cht_shorelines.ShorelinesTide
     assert isinstance(ShorelinesOutput(), ShorelinesOutput)

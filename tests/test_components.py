@@ -8,6 +8,7 @@ np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 
 from cht_shorelines.climate_change import ShorelinesClimateChange
+from cht_shorelines.dunes import ShorelinesDunes
 from cht_shorelines.grid import ShorelinesDomain
 from cht_shorelines.initial_conditions import ShorelinesInitialConditions
 from cht_shorelines.input import ShorelinesInput
@@ -72,6 +73,67 @@ def test_initial_conditions_write_and_read(tmp_path):
     np.testing.assert_allclose(reread.channel, np.array([[0.0, 0.0], [10.0, 0.0]]))
     np.testing.assert_allclose(reread.river_discharges[0, -1], 10.0)
     np.testing.assert_allclose(reread.mangroves[0, -1], 3.0)
+
+
+def test_dunes_roundtrip_with_forcing(tmp_path):
+    from cht_shorelines import Shorelines
+
+    model = Shorelines(root=tmp_path, runfile="case.txt")
+    model.input.variables.reftime = "2000-01-01"
+    model.input.variables.endofsimulation = "2000-01-03"
+
+    dunes = model.dunes
+    assert isinstance(dunes, ShorelinesDunes)
+    dunes.set_dunes([[0.0, 0.0, 12.0, 3.5, 8.5, 0.001, 0.00001, 4.0, 70.0]])
+    dunes.configure(
+        enabled=True,
+        cs=0.001,
+        cstill=0.00001,
+        xtill=[4.0],
+        perctill=[70.0],
+        aoverwash=4.0,
+        dtdune=0.25,
+        duneaw=0.15,
+        rhoa=1.3,
+        d50r=0.0003,
+        kw=4.5,
+        segmaw=0.2,
+        maxslope=1 / 20,
+        runupform="Larson",
+        runupfactor=1.2,
+        z=12.0,
+        swl0=0.4,
+    )
+    dunes.set_wind(
+        [
+            {"time": "2000-01-01", "uz": 8.0, "dir": 270.0},
+            {"time": "2000-01-02", "uz": 9.0, "dir": 275.0},
+            {"time": "2000-01-03", "uz": 10.0, "dir": 280.0},
+        ],
+        file_name="dune_wind.wnd",
+    )
+    dunes.set_water_levels(
+        [
+            {"time": "2000-01-01", "swl": 0.1},
+            {"time": "2000-01-02", "swl": 0.2},
+            {"time": "2000-01-03", "swl": 0.3},
+        ],
+        file_name="dune_water.wat",
+    )
+
+    model.write()
+    reread = Shorelines(root=tmp_path, runfile="case.txt", mode="r")
+
+    assert reread.dunes.enabled is True
+    assert reread.dunes.geometry.shape == (1, 9)
+    assert reread.dunes.wind_file == "dune_wind.wnd"
+    assert reread.dunes.water_level_file == "dune_water.wat"
+    assert list(reread.dunes.wind.columns) == ["time", "uz", "dir"]
+    assert list(reread.dunes.water_levels.columns) == ["time", "swl"]
+    assert reread.input.variables.runupform == "Larson"
+    assert reread.input.variables.runupfactor == 1.2
+    assert reread.input.variables.cs == 0.001
+    np.testing.assert_allclose(reread.dunes.geometry[0, 2:5], [12.0, 3.5, 8.5])
 
 
 def test_structures_write_and_read(tmp_path):

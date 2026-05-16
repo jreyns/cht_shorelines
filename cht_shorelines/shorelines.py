@@ -7,6 +7,7 @@ from typing import Literal
 from pyproj import CRS
 
 from .climate_change import ShorelinesClimateChange
+from .dunes import ShorelinesDunes
 from .grid import ShorelinesDomain
 from .initial_conditions import ShorelinesInitialConditions
 from .input import ShorelinesInput
@@ -40,6 +41,7 @@ class Shorelines:
         self.crs = CRS.from_user_input(crs)
         self.grid = ShorelinesDomain(self)
         self.initial_conditions = ShorelinesInitialConditions(self)
+        self.dunes = ShorelinesDunes(self)
         self.wave_boundary_conditions = ShorelinesWaveBoundaryConditions(self)
         self.structures = ShorelinesStructures(self)
         self.nourishments = ShorelinesNourishments(self)
@@ -74,6 +76,7 @@ class Shorelines:
         self.grid.read()
 
         self.initial_conditions.read()
+        self.dunes.read()
 
         self.wave_boundary_conditions.read()
 
@@ -94,6 +97,7 @@ class Shorelines:
         self.wave_boundary_conditions.write()
         self.structures.write()
         self.initial_conditions.write()
+        self.dunes.write()
         self.nourishments.write()
         self.tide.write()
         self.runup.write()
@@ -105,6 +109,7 @@ class Shorelines:
         self.wave_boundary_conditions = ShorelinesWaveBoundaryConditions(self)
         self.structures = ShorelinesStructures(self)
         self.initial_conditions = ShorelinesInitialConditions(self)
+        self.dunes = ShorelinesDunes(self)
         self.nourishments = ShorelinesNourishments(self)
         self.tide = ShorelinesTide(self)
         self.runup = ShorelinesRunup(self)
@@ -156,6 +161,11 @@ class Shorelines:
         ok, message = self.wave_boundary_conditions.check_times()
         if not ok:
             okay = False
-            messages.append(message)
+            messages.extend(message)
+
+        ok, message = self.dunes.check_times()
+        if not ok:
+            okay = False
+            messages.extend(message)
 
         return okay, messages
