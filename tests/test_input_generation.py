@@ -29,7 +29,9 @@ def test_minimal_case_writes_runfile_and_attribute_files(tmp_path):
     model.input.variables.tc = 0
     model.input.variables.dt = 0.01
     model.input.variables.trform = "CERC"
-    model.grid.set_coastline(np.array([[0.0, 0.0], [100.0, 0.0], [200.0, 10.0]]))
+    model.grid.set_coastline(
+        [np.array([[0.0, 0.0], [100.0, 0.0], [200.0, 10.0]])]
+    )
     model.wave_boundary_conditions.set_timeseries(
         pd.DataFrame(
             {

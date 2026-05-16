@@ -10,13 +10,13 @@ from .climate_change import ShorelinesClimateChange
 from .grid import ShorelinesDomain
 from .initial_conditions import ShorelinesInitialConditions
 from .input import ShorelinesInput
+from .io import PathLike, normalize_optional_file_name
 from .nourishments import ShorelinesNourishments
 from .output import ShorelinesOutput
 from .runup import ShorelinesRunup
 from .structures import ShorelinesStructures
 from .tide import ShorelinesTide
 from .wave_boundary_conditions import ShorelinesWaveBoundaryConditions
-from .io import PathLike, normalize_optional_file_name
 
 
 class Shorelines:
@@ -34,7 +34,9 @@ class Shorelines:
 
         self.function_path = r"D:\oss\shorelinestki\trunk\functions"
         self.path = str(Path(root))
-        self.input = ShorelinesInput(self.path, runfile=normalize_optional_file_name(runfile, argument="runfile"))
+        self.input = ShorelinesInput(
+            self.path, runfile=normalize_optional_file_name(runfile, argument="runfile")
+        )
         self.crs = CRS.from_user_input(crs)
         self.grid = ShorelinesDomain(self)
         self.initial_conditions = ShorelinesInitialConditions(self)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .io import (
-    CoordinateArray,
+    CoordinateLike,
     NumericTableLike,
     PathLike,
     ShorelinesModelProtocol,
@@ -39,10 +39,10 @@ class ShorelinesDomain:
 
     def set_coastline(
         self,
-        coordinates: CoordinateArray,
+        coordinates: CoordinateLike,
         file_name: PathLike = "coastline.ldb",
     ) -> None:
-        """Set the initial coastline as a NaN-separated ``Nx2`` coordinate array."""
+        """Set the initial coastline as an ``Nx2`` array or list of ``Nx2`` arrays."""
         self.coastline = validate_xy_sections(coordinates)
         self.coastline_file = normalize_file_name(file_name)
         if self.model is not None:
@@ -51,10 +51,10 @@ class ShorelinesDomain:
     def set_xy_file(
         self,
         variable_name: str,
-        coordinates: CoordinateArray,
+        coordinates: CoordinateLike,
         file_name: PathLike,
     ) -> None:
-        """Set a generic ShorelineS x/y input file variable as an ``Nx2`` array."""
+        """Set a generic ShorelineS x/y input file variable."""
         normalized_file_name = normalize_file_name(file_name)
         validated_coordinates = validate_xy_sections(coordinates)
         self.extra_xy_files[variable_name] = (

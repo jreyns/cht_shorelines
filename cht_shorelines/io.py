@@ -16,6 +16,8 @@ PathLike: TypeAlias = str | Path
 NumericScalar: TypeAlias = int | float | np.number
 NumericTableLike: TypeAlias = Sequence[object] | np.ndarray | pd.Series | pd.DataFrame
 CoordinateArray: TypeAlias = np.ndarray
+CoordinateSections: TypeAlias = Sequence[np.ndarray]
+CoordinateLike: TypeAlias = CoordinateArray | CoordinateSections
 RecordDataLike: TypeAlias = (
     pd.DataFrame
     | Mapping[str, Sequence[object]]
@@ -129,7 +131,7 @@ def write_numeric_table(
             fid.write(" ".join(_format_number(v, fmt) for v in row).rstrip() + "\n")
 
 
-def write_xy(path: Path, coordinates: CoordinateArray) -> None:
+def write_xy(path: Path, coordinates: CoordinateLike) -> None:
     """Write one or more x/y polylines stored as a NaN-separated ``Nx2`` array."""
     write_numeric_table(path, validate_coordinate_array(coordinates))
 
@@ -427,6 +429,32 @@ def coerce_numeric_table(
     return arr
 
 
+def _stack_coordinate_sections(
+    coordinates: Sequence[object],
+    *,
+    argument: str,
+) -> np.ndarray:
+    if not coordinates:
+        return np.empty((0, 2), dtype=float)
+    rows: list[np.ndarray] = []
+    for index, section in enumerate(coordinates):
+        if not isinstance(section, np.ndarray):
+            raise TypeError(
+                f"{argument}[{index}] must be provided as a numpy.ndarray section"
+            )
+        arr = np.asarray(section, dtype=float)
+        if arr.ndim != 2 or arr.shape[1] != 2:
+            raise ValueError(f"{argument}[{index}] must be an Nx2 array")
+        if arr.size == 0:
+            continue
+        if rows:
+            rows.append(np.array([[np.nan, np.nan]], dtype=float))
+        rows.append(arr)
+    if not rows:
+        return np.empty((0, 2), dtype=float)
+    return np.vstack(rows)
+
+
 def validate_coordinate_array(
     coordinates: object,
     *,
@@ -438,8 +466,9 @@ def validate_coordinate_array(
     Parameters
     ----------
     coordinates : object
-        Candidate coordinate input. Public interfaces require a
-        :class:`numpy.ndarray`.
+        Candidate coordinate input. Public interfaces accept either a
+        NaN-separated :class:`numpy.ndarray` or a list/tuple of ``Nx2``
+        numpy arrays.
     argument : str, default "coordinates"
         Argument name used in error messages.
 
@@ -448,9 +477,14 @@ def validate_coordinate_array(
     numpy.ndarray
         Validated ``Nx2`` floating-point coordinate array.
     """
-    if not isinstance(coordinates, np.ndarray):
-        raise TypeError(f"{argument} must be provided as a numpy.ndarray")
-    arr = np.asarray(coordinates, dtype=float)
+    if isinstance(coordinates, np.ndarray):
+        arr = np.asarray(coordinates, dtype=float)
+    elif isinstance(coordinates, (list, tuple)):
+        arr = _stack_coordinate_sections(coordinates, argument=argument)
+    else:
+        raise TypeError(
+            f"{argument} must be a numpy.ndarray or a list of numpy.ndarray sections"
+        )
     if arr.ndim != 2 or arr.shape[1] != 2:
         raise ValueError(f"{argument} must be an Nx2 array")
     nan_mask = np.any(np.isnan(arr), axis=1)

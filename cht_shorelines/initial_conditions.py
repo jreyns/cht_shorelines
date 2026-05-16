@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from .io import (
-    CoordinateArray,
+    CoordinateLike,
     NumericTableLike,
     PathLike,
     ShorelinesModelProtocol,
@@ -67,7 +67,7 @@ class ShorelinesInitialConditions:
 
     def set_sediment_limiter(
         self,
-        coordinates: CoordinateArray,
+        coordinates: CoordinateLike,
         width: NumericTableLike | None = None,
         file_name: PathLike = "sediment_limiter.ldb",
     ) -> None:
@@ -91,7 +91,7 @@ class ShorelinesInitialConditions:
 
     def set_channel_axis(
         self,
-        coordinates: CoordinateArray,
+        coordinates: CoordinateLike,
         file_name: PathLike = "channel.ldb",
     ) -> None:
         """
@@ -99,8 +99,8 @@ class ShorelinesInitialConditions:
 
         Parameters
         ----------
-        coordinates : numpy.ndarray
-            NaN-separated ``Nx2`` coordinate array.
+        coordinates : numpy.ndarray or sequence of numpy.ndarray
+            Coordinate array, or list of ``Nx2`` coordinate arrays.
         file_name : str or pathlib.Path, default "channel.ldb"
             Output file name.
         """
@@ -113,7 +113,7 @@ class ShorelinesInitialConditions:
 
     def set_spit_polygon(
         self,
-        coordinates: CoordinateArray,
+        coordinates: CoordinateLike,
         file_name: PathLike = "spit.ldb",
     ) -> None:
         """
@@ -121,8 +121,8 @@ class ShorelinesInitialConditions:
 
         Parameters
         ----------
-        coordinates : numpy.ndarray
-            NaN-separated ``Nx2`` coordinate array.
+        coordinates : numpy.ndarray or sequence of numpy.ndarray
+            Coordinate array, or list of ``Nx2`` coordinate arrays.
         file_name : str or pathlib.Path, default "spit.ldb"
             Output file name.
         """
@@ -133,7 +133,7 @@ class ShorelinesInitialConditions:
 
     def set_flood_delta(
         self,
-        coordinates: CoordinateArray,
+        coordinates: CoordinateLike,
         file_name: PathLike = "flood_delta.ldb",
     ) -> None:
         """
@@ -141,8 +141,8 @@ class ShorelinesInitialConditions:
 
         Parameters
         ----------
-        coordinates : numpy.ndarray
-            NaN-separated ``Nx2`` coordinate array.
+        coordinates : numpy.ndarray or sequence of numpy.ndarray
+            Coordinate array, or list of ``Nx2`` coordinate arrays.
         file_name : str or pathlib.Path, default "flood_delta.ldb"
             Output file name.
         """

@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from .io import (
-    CoordinateArray,
+    CoordinateLike,
     NumericTableLike,
     PathLike,
     ShorelinesModelProtocol,
@@ -48,11 +48,11 @@ class ShorelinesStructures:
 
     def set_structures(
         self,
-        coordinates: CoordinateArray,
+        coordinates: CoordinateLike,
         file_name: PathLike = "structures.ldb",
         structure_type: str | list[str] | None = None,
     ) -> None:
-        """Set hard structures as a NaN-separated ``Nx2`` coordinate array."""
+        """Set hard structures as an ``Nx2`` array or list of ``Nx2`` arrays."""
         self.structures = validate_xy_sections(coordinates)
         self.structures_file = normalize_file_name(file_name)
         if self.model is not None:
@@ -64,7 +64,7 @@ class ShorelinesStructures:
 
     def set_permeable(
         self,
-        coordinates: CoordinateArray,
+        coordinates: CoordinateLike,
         file_name: PathLike = "permeable.ldb",
         wavetransm: float = 1.0,
         qstransm: float = 1.0,
@@ -74,8 +74,8 @@ class ShorelinesStructures:
 
         Parameters
         ----------
-        coordinates : numpy.ndarray
-            NaN-separated ``Nx2`` coordinate array.
+        coordinates : numpy.ndarray or sequence of numpy.ndarray
+            Coordinate array, or list of ``Nx2`` coordinate arrays.
         file_name : str or pathlib.Path, default "permeable.ldb"
             Output file name.
         wavetransm : float, default 1.0
@@ -94,7 +94,7 @@ class ShorelinesStructures:
 
     def set_revetments(
         self,
-        coordinates: CoordinateArray,
+        coordinates: CoordinateLike,
         file_name: PathLike = "revetments.ldb",
     ) -> None:
         """
@@ -102,8 +102,8 @@ class ShorelinesStructures:
 
         Parameters
         ----------
-        coordinates : numpy.ndarray
-            NaN-separated ``Nx2`` coordinate array.
+        coordinates : numpy.ndarray or sequence of numpy.ndarray
+            Coordinate array, or list of ``Nx2`` coordinate arrays.
         file_name : str or pathlib.Path, default "revetments.ldb"
             Output file name.
         """

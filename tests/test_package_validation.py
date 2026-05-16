@@ -34,9 +34,9 @@ def test_validation_gridspec_accepts_supported_formats_and_rejects_invalid():
 
 def test_shorelines_clear_spatial_attributes_and_runner(tmp_path):
     model = Shorelines(root=tmp_path, runfile="case.txt")
-    model.grid.set_coastline(np.array([[0.0, 0.0], [1.0, 0.0]]))
-    model.initial_conditions.set_channel_axis(np.array([[0.0, 0.0], [1.0, 1.0]]))
-    model.structures.set_structures(np.array([[0.0, 0.0], [2.0, 2.0]]))
+    model.grid.set_coastline([np.array([[0.0, 0.0], [1.0, 0.0]])])
+    model.initial_conditions.set_channel_axis([np.array([[0.0, 0.0], [1.0, 1.0]])])
+    model.structures.set_structures([np.array([[0.0, 0.0], [2.0, 2.0]])])
     model.write()
 
     runner = model.write_matlab_runner(name="run_case_custom.m", shoreline_functions_path="C:/shorelines/functions")

@@ -30,9 +30,10 @@ from cht_shorelines.io import (
 def test_numeric_and_xy_roundtrip_helpers(tmp_path):
     table_path = tmp_path / "table.txt"
     xy_path = tmp_path / "coast.ldb"
-    coordinates = np.array(
-        [[0.0, 0.0], [1.0, 1.0], [np.nan, np.nan], [2.0, 2.0], [3.0, 3.0]]
-    )
+    coordinates = [
+        np.array([[0.0, 0.0], [1.0, 1.0]]),
+        np.array([[2.0, 2.0], [3.0, 3.0]]),
+    ]
 
     write_numeric_table(table_path, [[1.0, 2.0], [3.0, 4.0]], header="% header")
     write_xy(xy_path, coordinates)
@@ -41,7 +42,10 @@ def test_numeric_and_xy_roundtrip_helpers(tmp_path):
     coast = read_xy(xy_path)
 
     np.testing.assert_allclose(table, np.array([[1.0, 2.0], [3.0, 4.0]]))
-    np.testing.assert_allclose(coast, coordinates)
+    np.testing.assert_allclose(
+        coast,
+        np.array([[0.0, 0.0], [1.0, 1.0], [np.nan, np.nan], [2.0, 2.0], [3.0, 3.0]]),
+    )
 
 
 def test_io_helpers_validate_and_normalize_inputs(tmp_path):
