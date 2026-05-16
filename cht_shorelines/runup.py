@@ -32,11 +32,26 @@ class ShorelinesRunup:
 
     @property
     def root(self) -> Path:
+        """
+        Return the case root directory.
+
+        Returns
+        -------
+        pathlib.Path
+            Directory used to resolve and write runup-related files.
+        """
         if self.model is not None:
             return Path(self.model.path)
         return Path.cwd()
 
     def read(self) -> None:
+        """
+        Read runup water levels, wave conditions, and location files.
+
+        Notes
+        -----
+        Sources are read from file names referenced by the attached model input.
+        """
         variables = getattr(self.model.input, "variables", None) if self.model else None
         if variables is None:
             return
@@ -50,6 +65,14 @@ class ShorelinesRunup:
         self._read_locations(getattr(variables, "WaveLocfile", ""), water=False)
 
     def write(self) -> None:
+        """
+        Write runup location tables to disk.
+
+        Notes
+        -----
+        This component currently writes only location files. Runup forcing files
+        are read-only through this interface.
+        """
         if self.model is None:
             return
         if self.water_locations is not None:

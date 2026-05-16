@@ -324,23 +324,63 @@ class ShorelinesInput:
 
     @property
     def runfile_name(self) -> str:
+        """
+        Return the runfile name used for this case.
+
+        Returns
+        -------
+        str
+            Explicit runfile name, or ``<root-name>.txt`` when none is set.
+        """
         if self.runfile:
             return str(self.runfile)
         return f"{self.root.name}.txt"
 
     @property
     def runfile_path(self) -> Path:
+        """
+        Return the absolute path to the runfile.
+
+        Returns
+        -------
+        pathlib.Path
+            Full path to the active runfile.
+        """
         return self.root / self.runfile_name
 
     def to_dict(self) -> dict[str, object]:
+        """
+        Convert runfile variables to a plain dictionary.
+
+        Returns
+        -------
+        dict of str to object
+            Mapping of runfile keys to current values.
+        """
         return dict(vars(self.variables))
 
     def write(self, file_name: PathLike | None = None) -> None:
+        """
+        Write the runfile to disk.
+
+        Parameters
+        ----------
+        file_name : str or pathlib.Path, optional
+            Alternative runfile name to use for this write operation.
+        """
         if file_name is not None:
             self.runfile = normalize_optional_file_name(file_name, argument="file_name")
         write_runfile(self.runfile_path, self.to_dict())
 
     def read(self, file_name: PathLike | None = None) -> None:
+        """
+        Read runfile values from disk into ``variables``.
+
+        Parameters
+        ----------
+        file_name : str or pathlib.Path, optional
+            Alternative runfile name to read.
+        """
         if file_name is not None:
             self.runfile = normalize_optional_file_name(file_name, argument="file_name")
         path = self.runfile_path

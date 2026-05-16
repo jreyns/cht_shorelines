@@ -15,6 +15,7 @@ import pandas as pd
 PathLike: TypeAlias = str | Path
 NumericScalar: TypeAlias = int | float | np.number
 NumericTableLike: TypeAlias = Sequence[object] | np.ndarray | pd.Series | pd.DataFrame
+CoordinateArray: TypeAlias = np.ndarray
 RecordDataLike: TypeAlias = (
     pd.DataFrame
     | Mapping[str, Sequence[object]]
@@ -128,19 +129,9 @@ def write_numeric_table(
             fid.write(" ".join(_format_number(v, fmt) for v in row).rstrip() + "\n")
 
 
-def write_xy(path: Path, sections: Sequence[object] | np.ndarray) -> None:
-    """Write one or more x/y polylines with NaN separators."""
-    rows = []
-    for index, section in enumerate(_as_sections(sections)):
-        arr = coerce_numeric_table(
-            section,
-            argument=f"sections[{index}]",
-            exact_columns=2,
-        )
-        if index:
-            rows.append([np.nan, np.nan])
-        rows.extend(arr.tolist())
-    write_numeric_table(path, rows)
+def write_xy(path: Path, coordinates: CoordinateArray) -> None:
+    """Write one or more x/y polylines stored as a NaN-separated ``Nx2`` array."""
+    write_numeric_table(path, validate_coordinate_array(coordinates))
 
 
 def read_numeric_table(path: Path | str) -> np.ndarray:
@@ -160,28 +151,14 @@ def read_numeric_table(path: Path | str) -> np.ndarray:
     return np.asarray(rows, dtype=float)
 
 
-def read_xy(path: Path | str) -> np.ndarray | list[np.ndarray]:
-    """Read one or more x/y polylines from a numeric table with NaN separators."""
+def read_xy(path: Path | str) -> np.ndarray:
+    """Read one or more x/y polylines as a NaN-separated ``Nx2`` array."""
     data = read_numeric_table(path)
     if data.size == 0:
         return np.empty((0, 2), dtype=float)
     if data.ndim != 2 or data.shape[1] < 2:
         raise ValueError(f"Expected at least two columns in XY file {path}")
-    return split_xy_sections(data[:, :2])
-
-
-def _as_sections(sections: Sequence[object] | np.ndarray) -> list[object]:
-    if isinstance(sections, np.ndarray):
-        return [sections]
-    if not sections:
-        return []
-    first = sections[0]
-    if isinstance(first, (int, float, np.number)):
-        return [sections]
-    arr = np.asarray(sections, dtype=object)
-    if arr.ndim == 2 and arr.shape[1] == 2:
-        return [sections]
-    return list(sections)
+    return validate_coordinate_array(data[:, :2], argument="data")
 
 
 def split_xy_sections(data: NumericTableLike) -> list[np.ndarray] | np.ndarray:
@@ -207,13 +184,16 @@ def split_xy_sections(data: NumericTableLike) -> list[np.ndarray] | np.ndarray:
 def xy_columns_to_sections(
     x: NumericTableLike,
     y: NumericTableLike,
-) -> list[np.ndarray] | np.ndarray:
-    """Combine ``x`` and ``y`` vectors into one or more coordinate sections."""
+) -> np.ndarray:
+    """Combine ``x`` and ``y`` vectors into a NaN-separated ``Nx2`` array."""
     x_arr = np.asarray(x, dtype=float).reshape(-1)
     y_arr = np.asarray(y, dtype=float).reshape(-1)
     if x_arr.shape != y_arr.shape:
         raise ValueError("x and y must have the same shape")
-    return split_xy_sections(np.column_stack([x_arr, y_arr]))
+    return validate_coordinate_array(
+        np.column_stack([x_arr, y_arr]),
+        argument="coordinates",
+    )
 
 
 def dataframe_from_records(data: RecordDataLike, required: Iterable[str]) -> pd.DataFrame:
@@ -228,16 +208,56 @@ def dataframe_from_records(data: RecordDataLike, required: Iterable[str]) -> pd.
 
 
 def yyyymmddhhmm(value: DatetimeLike) -> int:
+    """
+    Convert a date-like value to ``YYYYMMDDHHMM`` integer format.
+
+    Parameters
+    ----------
+    value : datetime-like
+        Value accepted by :class:`pandas.Timestamp`.
+
+    Returns
+    -------
+    int
+        Compact date-time representation.
+    """
     timestamp = pd.Timestamp(value)
     return int(timestamp.strftime("%Y%m%d%H%M"))
 
 
 def yyyymmdd(value: DatetimeLike) -> int:
+    """
+    Convert a date-like value to ``YYYYMMDD`` integer format.
+
+    Parameters
+    ----------
+    value : datetime-like
+        Value accepted by :class:`pandas.Timestamp`.
+
+    Returns
+    -------
+    int
+        Compact date representation.
+    """
     timestamp = pd.Timestamp(value)
     return int(timestamp.strftime("%Y%m%d"))
 
 
 def parse_compact_datetime(value: DatetimeLike) -> pd.Timestamp:
+    """
+    Parse a compact numeric date or date-time value.
+
+    Parameters
+    ----------
+    value : datetime-like
+        Integer-like value in ``YYYYMMDD``, ``YYYYMMDDHHMM``, or
+        ``YYYYMMDDHHMMSS`` format.
+
+    Returns
+    -------
+    pandas.Timestamp
+        Parsed timestamp.
+    """
     text = str(int(float(value)))
     if len(text) == 8:
         return pd.to_datetime(text, format="%Y%m%d")
@@ -249,6 +269,21 @@ def parse_compact_datetime(value: DatetimeLike) -> pd.Timestamp:
 
 
 def maybe_path(root: Path | str, value: PathLike | None) -> Path | None:
+    """
+    Resolve an optional path relative to a root directory.
+
+    Parameters
+    ----------
+    root : str or pathlib.Path
+        Base directory for relative paths.
+    value : str or pathlib.Path, optional
+        Candidate path value.
+
+    Returns
+    -------
+    pathlib.Path or None
+        Resolved path when ``value`` is non-empty, otherwise ``None``.
+    """
     if value is None:
         return None
     if isinstance(value, Path):
@@ -263,6 +298,19 @@ def maybe_path(root: Path | str, value: PathLike | None) -> Path | None:
 
 
 def normalize_probabilities(values: NumericTableLike) -> np.ndarray:
+    """
+    Normalize probability-like values to fractions.
+
+    Parameters
+    ----------
+    values : array-like
+        Probability values expressed as fractions, percentages, or day counts.
+
+    Returns
+    -------
+    numpy.ndarray
+        Normalized one-dimensional probability vector.
+    """
     prob = np.asarray(values, dtype=float).reshape(-1)
     total = np.nansum(prob)
     if total > 1.1 and total < 100:
@@ -283,6 +331,21 @@ def _format_number(value: float, fmt: str) -> str:
 
 
 def normalize_file_name(file_name: PathLike, *, argument: str = "file_name") -> str:
+    """
+    Validate and normalize a required file name argument.
+
+    Parameters
+    ----------
+    file_name : str or pathlib.Path
+        File name to normalize.
+    argument : str, default "file_name"
+        Argument name used in error messages.
+
+    Returns
+    -------
+    str
+        Normalized file name.
+    """
     if isinstance(file_name, Path):
         text = str(file_name)
     elif isinstance(file_name, str):
@@ -299,6 +362,21 @@ def normalize_optional_file_name(
     *,
     argument: str = "file_name",
 ) -> str | None:
+    """
+    Validate and normalize an optional file name argument.
+
+    Parameters
+    ----------
+    file_name : str or pathlib.Path, optional
+        File name to normalize.
+    argument : str, default "file_name"
+        Argument name used in error messages.
+
+    Returns
+    -------
+    str or None
+        Normalized file name, or ``None`` when not provided.
+    """
     if file_name is None:
         return None
     return normalize_file_name(file_name, argument=argument)
@@ -311,6 +389,25 @@ def coerce_numeric_table(
     min_columns: int = 1,
     exact_columns: int | None = None,
 ) -> np.ndarray:
+    """
+    Convert numeric table input to a validated two-dimensional array.
+
+    Parameters
+    ----------
+    data : array-like
+        Numeric input to coerce.
+    argument : str, default "data"
+        Argument name used in error messages.
+    min_columns : int, default 1
+        Minimum allowed number of columns.
+    exact_columns : int, optional
+        Exact required number of columns.
+
+    Returns
+    -------
+    numpy.ndarray
+        Two-dimensional floating-point array.
+    """
     try:
         arr = np.asarray(data, dtype=float)
     except (TypeError, ValueError) as exc:
@@ -330,15 +427,66 @@ def coerce_numeric_table(
     return arr
 
 
-def validate_xy_sections(
-    sections: Sequence[object] | np.ndarray,
+def validate_coordinate_array(
+    coordinates: object,
     *,
     argument: str = "coordinates",
-) -> Sequence[object] | np.ndarray:
-    for index, section in enumerate(_as_sections(sections)):
-        coerce_numeric_table(
-            section,
-            argument=f"{argument}[{index}]",
-            exact_columns=2,
+) -> np.ndarray:
+    """
+    Validate a public coordinate array input.
+
+    Parameters
+    ----------
+    coordinates : object
+        Candidate coordinate input. Public interfaces require a
+        :class:`numpy.ndarray`.
+    argument : str, default "coordinates"
+        Argument name used in error messages.
+
+    Returns
+    -------
+    numpy.ndarray
+        Validated ``Nx2`` floating-point coordinate array.
+    """
+    if not isinstance(coordinates, np.ndarray):
+        raise TypeError(f"{argument} must be provided as a numpy.ndarray")
+    arr = np.asarray(coordinates, dtype=float)
+    if arr.ndim != 2 or arr.shape[1] != 2:
+        raise ValueError(f"{argument} must be an Nx2 array")
+    nan_mask = np.any(np.isnan(arr), axis=1)
+    if np.any(np.isnan(arr[~nan_mask])) or np.any(np.isinf(arr)):
+        raise ValueError(
+            f"{argument} must contain finite values except full NaN separator rows"
         )
-    return sections
+    if nan_mask.any():
+        invalid_rows = nan_mask & ~np.all(np.isnan(arr), axis=1)
+        if invalid_rows.any():
+            raise ValueError(f"{argument} NaN separator rows must be [NaN, NaN]")
+        if nan_mask[0] or nan_mask[-1]:
+            raise ValueError(f"{argument} must not start or end with a NaN separator row")
+        if np.any(nan_mask[:-1] & nan_mask[1:]):
+            raise ValueError(f"{argument} must not contain consecutive NaN separator rows")
+    return arr
+
+
+def validate_xy_sections(
+    coordinates: object,
+    *,
+    argument: str = "coordinates",
+) -> np.ndarray:
+    """
+    Validate coordinate input for XY-based public APIs.
+
+    Parameters
+    ----------
+    coordinates : object
+        Candidate coordinate input.
+    argument : str, default "coordinates"
+        Argument name used in error messages.
+
+    Returns
+    -------
+    numpy.ndarray
+        Validated ``Nx2`` coordinate array.
+    """
+    return validate_coordinate_array(coordinates, argument=argument)

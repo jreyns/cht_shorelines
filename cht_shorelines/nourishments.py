@@ -30,6 +30,14 @@ class ShorelinesNourishments:
 
     @property
     def root(self) -> Path:
+        """
+        Return the case root directory.
+
+        Returns
+        -------
+        pathlib.Path
+            Directory used to resolve and write nourishment files.
+        """
         if self.model is not None:
             return Path(self.model.path)
         return Path.cwd()
@@ -59,6 +67,16 @@ class ShorelinesNourishments:
         data: NumericTableLike,
         file_name: PathLike = "shoreface.fnor",
     ) -> None:
+        """
+        Set shoreface nourishment data.
+
+        Parameters
+        ----------
+        data : array-like
+            Numeric table describing shoreface nourishments.
+        file_name : str or pathlib.Path, default "shoreface.fnor"
+            Output file name.
+        """
         self.shoreface_nourishments = coerce_numeric_table(data, argument="data")
         self.shoreface_file = normalize_file_name(file_name)
         if self.model is not None:
@@ -67,6 +85,14 @@ class ShorelinesNourishments:
             variables.fnorfile = self.shoreface_file
 
     def read(self) -> None:
+        """
+        Read nourishment inputs from the attached model.
+
+        Notes
+        -----
+        Nourishment tables are loaded from files referenced in the runfile when
+        those files exist.
+        """
         variables = getattr(self.model.input, "variables", None) if self.model else None
         if variables is None:
             return
@@ -101,6 +127,14 @@ class ShorelinesNourishments:
                 self.shoreface_file = shoreface_file
 
     def write(self) -> None:
+        """
+        Write nourishment inputs to disk.
+
+        Notes
+        -----
+        When a model is attached, the corresponding runfile variables are updated
+        with the written file names.
+        """
         if self.nourishments is not None:
             file_name = self.nourishment_file or "nourishments.nor"
             rows = []

@@ -52,6 +52,14 @@ class ShorelinesWaveBoundaryConditions:
 
     @property
     def root(self) -> Path:
+        """
+        Return the case root directory.
+
+        Returns
+        -------
+        pathlib.Path
+            Directory used to resolve and write boundary-condition files.
+        """
         if self.model is not None:
             return Path(self.model.path)
         return Path.cwd()
@@ -166,6 +174,9 @@ class ShorelinesWaveBoundaryConditions:
             self.model.input.variables.wndfile = self.wind_file
 
     def read(self) -> None:
+        """
+        Read wave, water-level, and wind boundary inputs from the model.
+        """
         variables = getattr(self.model.input, "variables", None) if self.model else None
         if variables is None:
             return
@@ -175,6 +186,14 @@ class ShorelinesWaveBoundaryConditions:
         self._read_wind_source(getattr(variables, "wndfile", ""))
 
     def write(self) -> None:
+        """
+        Write configured boundary-condition inputs to disk.
+
+        Notes
+        -----
+        When a model is attached, the corresponding runfile variables are updated
+        with the written file names.
+        """
         if self.wave_climate is not None:
             self._write_wave_climate(
                 self.root / (self.wave_climate_file or "waves.wvc")
@@ -216,6 +235,14 @@ class ShorelinesWaveBoundaryConditions:
                 self.model.input.variables.wndfile = list_file
 
     def check_times(self) -> tuple[bool, list[str]]:
+        """
+        Check whether time-series forcing covers the simulation period.
+
+        Returns
+        -------
+        tuple of bool and list of str
+            Boolean success flag and coverage messages for incomplete inputs.
+        """
         messages = []
         variables = self.model.input.variables if self.model is not None else None
         if variables is None:

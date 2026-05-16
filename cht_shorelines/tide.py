@@ -38,6 +38,14 @@ class ShorelinesTide:
 
     @property
     def root(self) -> Path:
+        """
+        Return the case root directory.
+
+        Returns
+        -------
+        pathlib.Path
+            Directory used to resolve and write tide-related files.
+        """
         if self.model is not None:
             return Path(self.model.path)
         return Path.cwd()
@@ -47,6 +55,17 @@ class ShorelinesTide:
         data: NumericTableLike,
         file_name: PathLike = "tide.txt",
     ) -> None:
+        """
+        Set tide forcing data.
+
+        Parameters
+        ----------
+        data : array-like
+            Numeric tide table. Eleven columns indicate harmonic input; other
+            compatible tables are interpreted as water-level forcing.
+        file_name : str or pathlib.Path, default "tide.txt"
+            Output file name.
+        """
         self.tide_data = coerce_numeric_table(data, argument="data")
         self.tide_file = normalize_file_name(file_name)
         self.tide_type = 1 if self.tide_data.ndim == 2 and self.tide_data.shape[1] == 11 else 2
@@ -58,12 +77,25 @@ class ShorelinesTide:
         data: NumericTableLike,
         file_name: PathLike = "tideprofile.txt",
     ) -> None:
+        """
+        Set the tide profile table.
+
+        Parameters
+        ----------
+        data : array-like
+            Numeric tide profile table.
+        file_name : str or pathlib.Path, default "tideprofile.txt"
+            Output file name.
+        """
         self.tide_profile = coerce_numeric_table(data, argument="data")
         self.tide_profile_file = normalize_file_name(file_name)
         if self.model is not None:
             self.model.input.variables.tideprofile = self.tide_profile_file
 
     def read(self) -> None:
+        """
+        Read tide forcing and tide profile inputs from the model.
+        """
         variables = getattr(self.model.input, "variables", None) if self.model else None
         if variables is None:
             return
@@ -91,6 +123,14 @@ class ShorelinesTide:
             self.tide_profile = np.asarray(profile_value, dtype=float)
 
     def write(self) -> None:
+        """
+        Write tide forcing and tide profile inputs to disk.
+
+        Notes
+        -----
+        When a model is attached, the corresponding runfile variables are updated
+        with the written file names.
+        """
         if self.model is None:
             return
         if self.tide_data is not None:

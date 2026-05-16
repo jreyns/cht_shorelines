@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from .io import (
+    CoordinateArray,
     NumericTableLike,
     PathLike,
     ShorelinesModelProtocol,
@@ -39,6 +40,14 @@ class ShorelinesInitialConditions:
 
     @property
     def root(self) -> Path:
+        """
+        Return the case root directory.
+
+        Returns
+        -------
+        pathlib.Path
+            Directory used to resolve and write initial-condition files.
+        """
         if self.model is not None:
             return Path(self.model.path)
         return Path.cwd()
@@ -58,7 +67,7 @@ class ShorelinesInitialConditions:
 
     def set_sediment_limiter(
         self,
-        coordinates: NumericTableLike,
+        coordinates: CoordinateArray,
         width: NumericTableLike | None = None,
         file_name: PathLike = "sediment_limiter.ldb",
     ) -> None:
@@ -82,9 +91,19 @@ class ShorelinesInitialConditions:
 
     def set_channel_axis(
         self,
-        coordinates: object,
+        coordinates: CoordinateArray,
         file_name: PathLike = "channel.ldb",
     ) -> None:
+        """
+        Set the channel axis polyline.
+
+        Parameters
+        ----------
+        coordinates : numpy.ndarray
+            NaN-separated ``Nx2`` coordinate array.
+        file_name : str or pathlib.Path, default "channel.ldb"
+            Output file name.
+        """
         self.channel = validate_xy_sections(coordinates)
         self.channel_file = normalize_file_name(file_name)
         if self.model is not None:
@@ -94,9 +113,19 @@ class ShorelinesInitialConditions:
 
     def set_spit_polygon(
         self,
-        coordinates: object,
+        coordinates: CoordinateArray,
         file_name: PathLike = "spit.ldb",
     ) -> None:
+        """
+        Set the spit polygon coordinates.
+
+        Parameters
+        ----------
+        coordinates : numpy.ndarray
+            NaN-separated ``Nx2`` coordinate array.
+        file_name : str or pathlib.Path, default "spit.ldb"
+            Output file name.
+        """
         self.spit_polygon = validate_xy_sections(coordinates)
         self.spit_file = normalize_file_name(file_name)
         if self.model is not None:
@@ -104,9 +133,19 @@ class ShorelinesInitialConditions:
 
     def set_flood_delta(
         self,
-        coordinates: object,
+        coordinates: CoordinateArray,
         file_name: PathLike = "flood_delta.ldb",
     ) -> None:
+        """
+        Set the flood-delta polygon coordinates.
+
+        Parameters
+        ----------
+        coordinates : numpy.ndarray
+            NaN-separated ``Nx2`` coordinate array.
+        file_name : str or pathlib.Path, default "flood_delta.ldb"
+            Output file name.
+        """
         self.flood_delta = validate_xy_sections(coordinates)
         self.flood_delta_file = normalize_file_name(file_name)
         if self.model is not None:
@@ -141,6 +180,14 @@ class ShorelinesInitialConditions:
             variables.ldbmangrove = self.mangrove_file
 
     def read(self) -> None:
+        """
+        Read supported initial-condition inputs from the model.
+
+        Notes
+        -----
+        File-based inputs are preferred. When files are absent, compatible values
+        stored directly in the runfile are converted into arrays.
+        """
         variables = getattr(self.model.input, "variables", None) if self.model else None
         if variables is None:
             return
@@ -180,6 +227,14 @@ class ShorelinesInitialConditions:
             self.flood_delta = xy_columns_to_sections(variables.xfloodpol, variables.yfloodpol)
 
     def write(self) -> None:
+        """
+        Write configured initial-condition inputs to disk.
+
+        Notes
+        -----
+        When a model is attached, the corresponding runfile variables are updated
+        with the written file names.
+        """
         if self.dunes is not None:
             file_name = self.dune_file or "dunes.dun"
             write_numeric_table(self.root / file_name, self.dunes)

@@ -26,8 +26,8 @@ def test_grid_domain_write_table_and_read_fallback(tmp_path):
     model = make_model(tmp_path)
     domain = ShorelinesDomain(model)
 
-    domain.set_coastline([[0.0, 0.0], [1.0, 0.0]], file_name="coast.ldb")
-    domain.set_xy_file("ldbplot", [[2.0, 2.0], [3.0, 3.0]], "plot.ldb")
+    domain.set_coastline(np.array([[0.0, 0.0], [1.0, 0.0]]), file_name="coast.ldb")
+    domain.set_xy_file("ldbplot", np.array([[2.0, 2.0], [3.0, 3.0]]), "plot.ldb")
     domain.write_table("xyout", [[1.0, 2.0], [3.0, 4.0]], "table.txt", header="% data")
     domain.write()
 
@@ -49,10 +49,10 @@ def test_initial_conditions_write_and_read(tmp_path):
     initial = ShorelinesInitialConditions(model)
 
     initial.set_dunes([[0.0, 0.0, 10.0, 3.0, 8.0]])
-    initial.set_sediment_limiter([[0.0, 0.0], [1.0, 1.0]], width=[5.0, 6.0])
-    initial.set_channel_axis([[0.0, 0.0], [10.0, 0.0]])
-    initial.set_spit_polygon([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]])
-    initial.set_flood_delta([[0.0, 0.0], [0.0, 1.0]])
+    initial.set_sediment_limiter(np.array([[0.0, 0.0], [1.0, 1.0]]), width=[5.0, 6.0])
+    initial.set_channel_axis(np.array([[0.0, 0.0], [10.0, 0.0]]))
+    initial.set_spit_polygon(np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]]))
+    initial.set_flood_delta(np.array([[0.0, 0.0], [0.0, 1.0]]))
     initial.set_river_discharges([[0.0, 0.0, 1.0, 1.0, 20000101, 20000102, 10.0]])
     initial.set_mangroves([[0.0, 0.0, 1.0, 2.0, 3.0]])
     initial.write()
@@ -71,9 +71,9 @@ def test_structures_write_and_read(tmp_path):
     model = make_model(tmp_path)
     structures = ShorelinesStructures(model)
 
-    structures.set_structures([[0.0, 0.0], [1.0, 1.0]], structure_type="groin")
-    structures.set_permeable([[2.0, 2.0], [3.0, 3.0]], wavetransm=0.7, qstransm=0.5)
-    structures.set_revetments([[4.0, 4.0], [5.0, 5.0]])
+    structures.set_structures(np.array([[0.0, 0.0], [1.0, 1.0]]), structure_type="groin")
+    structures.set_permeable(np.array([[2.0, 2.0], [3.0, 3.0]]), wavetransm=0.7, qstransm=0.5)
+    structures.set_revetments(np.array([[4.0, 4.0], [5.0, 5.0]]))
     structures.set_transmission_characteristics([[1.0, 2.0, 3.0, 4.0, 5.0]])
     structures.write()
 
@@ -231,3 +231,16 @@ def test_wave_boundary_conditions_write_read_and_check_times(tmp_path):
     assert "waves/a.wvt" in (tmp_path / "waves_list.wvt").read_text()
     assert list(reread.water_levels.columns) == ["time", "swl"]
     assert list(reread.wind.columns) == ["time", "uz", "dir"]
+
+
+def test_coordinate_setters_reject_non_ndarray_inputs(tmp_path):
+    model = make_model(tmp_path)
+
+    with pytest.raises(TypeError):
+        ShorelinesDomain(model).set_coastline([[0.0, 0.0], [1.0, 0.0]])
+
+    with pytest.raises(TypeError):
+        ShorelinesInitialConditions(model).set_channel_axis([[0.0, 0.0], [1.0, 0.0]])
+
+    with pytest.raises(TypeError):
+        ShorelinesStructures(model).set_structures([[0.0, 0.0], [1.0, 0.0]])

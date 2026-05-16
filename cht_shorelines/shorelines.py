@@ -66,6 +66,9 @@ class Shorelines:
         self.input.write()
 
     def read_attribute_files(self) -> None:
+        """
+        Read all supported attribute files referenced by the runfile.
+        """
         self.grid.read()
 
         self.initial_conditions.read()
@@ -135,6 +138,14 @@ class Shorelines:
         return path
 
     def check_times(self) -> tuple[bool, list[str]]:
+        """
+        Check whether forcing time series cover the simulation period.
+
+        Returns
+        -------
+        tuple of bool and list of str
+            Boolean success flag and validation messages for uncovered periods.
+        """
         # Check that the boundary and other forcing fully covers the simulation time
         messages = []
         okay = True

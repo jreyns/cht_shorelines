@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from .io import (
+    CoordinateArray,
     NumericTableLike,
     PathLike,
     ShorelinesModelProtocol,
@@ -33,17 +34,25 @@ class ShorelinesStructures:
 
     @property
     def root(self) -> Path:
+        """
+        Return the case root directory.
+
+        Returns
+        -------
+        pathlib.Path
+            Directory used to resolve and write structure-related files.
+        """
         if self.model is not None:
             return Path(self.model.path)
         return Path.cwd()
 
     def set_structures(
         self,
-        coordinates: object,
+        coordinates: CoordinateArray,
         file_name: PathLike = "structures.ldb",
         structure_type: str | list[str] | None = None,
     ) -> None:
-        """Set hard structures as one or more x/y coordinate sections."""
+        """Set hard structures as a NaN-separated ``Nx2`` coordinate array."""
         self.structures = validate_xy_sections(coordinates)
         self.structures_file = normalize_file_name(file_name)
         if self.model is not None:
@@ -55,11 +64,25 @@ class ShorelinesStructures:
 
     def set_permeable(
         self,
-        coordinates: object,
+        coordinates: CoordinateArray,
         file_name: PathLike = "permeable.ldb",
         wavetransm: float = 1.0,
         qstransm: float = 1.0,
     ) -> None:
+        """
+        Set permeable structure coordinates and transmission factors.
+
+        Parameters
+        ----------
+        coordinates : numpy.ndarray
+            NaN-separated ``Nx2`` coordinate array.
+        file_name : str or pathlib.Path, default "permeable.ldb"
+            Output file name.
+        wavetransm : float, default 1.0
+            Wave transmission factor.
+        qstransm : float, default 1.0
+            Sediment transport transmission factor.
+        """
         self.permeable = validate_xy_sections(coordinates)
         self.permeable_file = normalize_file_name(file_name)
         if self.model is not None:
@@ -71,9 +94,19 @@ class ShorelinesStructures:
 
     def set_revetments(
         self,
-        coordinates: object,
+        coordinates: CoordinateArray,
         file_name: PathLike = "revetments.ldb",
     ) -> None:
+        """
+        Set revetment coordinates.
+
+        Parameters
+        ----------
+        coordinates : numpy.ndarray
+            NaN-separated ``Nx2`` coordinate array.
+        file_name : str or pathlib.Path, default "revetments.ldb"
+            Output file name.
+        """
         self.revetments = validate_xy_sections(coordinates)
         self.revetments_file = normalize_file_name(file_name)
         if self.model is not None:
@@ -102,6 +135,14 @@ class ShorelinesStructures:
             variables.transmform = form
 
     def read(self) -> None:
+        """
+        Read supported structure inputs from the model.
+
+        Notes
+        -----
+        File-based inputs are preferred. When files are absent, compatible values
+        stored directly in the runfile are converted into arrays.
+        """
         variables = getattr(self.model.input, "variables", None) if self.model else None
         if variables is None:
             return
@@ -137,6 +178,14 @@ class ShorelinesStructures:
             )
 
     def write(self) -> None:
+        """
+        Write configured structure inputs to disk.
+
+        Notes
+        -----
+        When a model is attached, the corresponding runfile variables are updated
+        with the written file names.
+        """
         if self.structures is not None:
             file_name = self.structures_file or "structures.ldb"
             write_xy(self.root / file_name, self.structures)

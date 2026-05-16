@@ -33,6 +33,14 @@ class ShorelinesClimateChange:
 
     @property
     def root(self) -> Path:
+        """
+        Return the case root directory.
+
+        Returns
+        -------
+        pathlib.Path
+            Directory used to resolve and write climate-change files.
+        """
         if self.model is not None:
             return Path(self.model.path)
         return Path.cwd()
@@ -42,6 +50,16 @@ class ShorelinesClimateChange:
         value: ChangeInput,
         file_name: PathLike | None = None,
     ) -> None:
+        """
+        Set sea-level-rise forcing.
+
+        Parameters
+        ----------
+        value : ChangeInput
+            Scalar offset or two-column time series containing time and value.
+        file_name : str or pathlib.Path, optional
+            Output file name used when ``value`` is a time series.
+        """
         self.sea_level_rise = _normalize_change_input(value)
         self.sea_level_rise_file = normalize_optional_file_name(file_name)
         if self.model is not None:
@@ -54,6 +72,16 @@ class ShorelinesClimateChange:
         value: ChangeInput,
         file_name: PathLike | None = None,
     ) -> None:
+        """
+        Set wave-height change forcing.
+
+        Parameters
+        ----------
+        value : ChangeInput
+            Scalar offset or two-column time series containing time and value.
+        file_name : str or pathlib.Path, optional
+            Output file name used when ``value`` is a time series.
+        """
         self.wave_height_change = _normalize_change_input(value)
         self.wave_height_change_file = normalize_optional_file_name(file_name)
         if self.model is not None:
@@ -66,6 +94,16 @@ class ShorelinesClimateChange:
         value: ChangeInput,
         file_name: PathLike | None = None,
     ) -> None:
+        """
+        Set wave-direction change forcing.
+
+        Parameters
+        ----------
+        value : ChangeInput
+            Scalar offset or two-column time series containing time and value.
+        file_name : str or pathlib.Path, optional
+            Output file name used when ``value`` is a time series.
+        """
         self.wave_direction_change = _normalize_change_input(value)
         self.wave_direction_change_file = normalize_optional_file_name(file_name)
         if self.model is not None:
@@ -74,14 +112,36 @@ class ShorelinesClimateChange:
             )
 
     def read(self) -> None:
+        """
+        Read climate-change settings from the attached model input.
+
+        Notes
+        -----
+        File-backed series are loaded into pandas data frames. Scalar values are
+        preserved as-is.
+        """
         variables = getattr(self.model.input, "variables", None) if self.model else None
         if variables is None:
             return
-        self.sea_level_rise, self.sea_level_rise_file = self._read_source(variables.ccslr)
-        self.wave_height_change, self.wave_height_change_file = self._read_source(variables.cchs)
-        self.wave_direction_change, self.wave_direction_change_file = self._read_source(variables.ccdir)
+        self.sea_level_rise, self.sea_level_rise_file = self._read_source(
+            variables.ccslr
+        )
+        self.wave_height_change, self.wave_height_change_file = self._read_source(
+            variables.cchs
+        )
+        self.wave_direction_change, self.wave_direction_change_file = self._read_source(
+            variables.ccdir
+        )
 
     def write(self) -> None:
+        """
+        Write climate-change settings to files and model variables.
+
+        Notes
+        -----
+        Time-series inputs are written to disk and the corresponding runfile
+        variables are updated with the generated file names.
+        """
         if self.model is None:
             return
         self.model.input.variables.ccslr = self._write_source(
@@ -121,7 +181,9 @@ def _normalize_change_input(value: ChangeInput) -> NumericScalar | pd.DataFrame:
     if isinstance(value, pd.DataFrame):
         return value.copy()
     if _is_series_like(value):
-        return _change_dataframe(coerce_numeric_table(value, argument="value", min_columns=2))
+        return _change_dataframe(
+            coerce_numeric_table(value, argument="value", min_columns=2)
+        )
     return value
 
 

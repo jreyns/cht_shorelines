@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
-
 from .io import (
+    CoordinateArray,
     NumericTableLike,
     PathLike,
     ShorelinesModelProtocol,
@@ -26,16 +25,24 @@ class ShorelinesDomain:
 
     @property
     def root(self) -> Path:
+        """
+        Return the case root directory.
+
+        Returns
+        -------
+        pathlib.Path
+            Directory used to resolve and write grid-related files.
+        """
         if self.model is not None:
             return Path(self.model.path)
         return Path.cwd()
 
     def set_coastline(
         self,
-        coordinates: object,
+        coordinates: CoordinateArray,
         file_name: PathLike = "coastline.ldb",
     ) -> None:
-        """Set the initial coastline as one or more Nx2 coordinate sections."""
+        """Set the initial coastline as a NaN-separated ``Nx2`` coordinate array."""
         self.coastline = validate_xy_sections(coordinates)
         self.coastline_file = normalize_file_name(file_name)
         if self.model is not None:
@@ -44,17 +51,28 @@ class ShorelinesDomain:
     def set_xy_file(
         self,
         variable_name: str,
-        coordinates: object,
+        coordinates: CoordinateArray,
         file_name: PathLike,
     ) -> None:
-        """Set a generic ShorelineS x/y input file variable."""
+        """Set a generic ShorelineS x/y input file variable as an ``Nx2`` array."""
         normalized_file_name = normalize_file_name(file_name)
         validated_coordinates = validate_xy_sections(coordinates)
-        self.extra_xy_files[variable_name] = (normalized_file_name, validated_coordinates)
+        self.extra_xy_files[variable_name] = (
+            normalized_file_name,
+            validated_coordinates,
+        )
         if self.model is not None:
             setattr(self.model.input.variables, variable_name, normalized_file_name)
 
     def read(self) -> None:
+        """
+        Read coastline information from the attached model input.
+
+        Notes
+        -----
+        File-based coastline input takes precedence over ``xmc`` and ``ymc``
+        vectors stored directly in the runfile.
+        """
         variables = getattr(self.model.input, "variables", None) if self.model else None
         if variables is None:
             return
@@ -64,10 +82,20 @@ class ShorelinesDomain:
                 self.coastline = read_xy(path)
                 self.coastline_file = variables.ldbcoastline
                 return
-        if _has_data(getattr(variables, "xmc", "")) and _has_data(getattr(variables, "ymc", "")):
+        if _has_data(getattr(variables, "xmc", "")) and _has_data(
+            getattr(variables, "ymc", "")
+        ):
             self.coastline = xy_columns_to_sections(variables.xmc, variables.ymc)
 
     def write(self) -> None:
+        """
+        Write configured coastline and auxiliary XY files.
+
+        Notes
+        -----
+        When a model is attached, the corresponding runfile variables are updated
+        to point to the written files.
+        """
         if self.coastline is not None:
             file_name = self.coastline_file or "coastline.ldb"
             write_xy(self.root / file_name, self.coastline)
@@ -86,12 +114,29 @@ class ShorelinesDomain:
         file_name: PathLike,
         header: str | None = None,
     ) -> None:
+        """
+        Write a numeric table and register it on the model input.
+
+        Parameters
+        ----------
+        variable_name : str
+            Name of the runfile variable to update.
+        data : array-like
+            Numeric table to write.
+        file_name : str or pathlib.Path
+            Output file name.
+        header : str, optional
+            Header line written before the numeric data.
+        """
         normalized_file_name = normalize_file_name(file_name)
         write_numeric_table(self.root / normalized_file_name, data, header=header)
         if self.model is not None:
             setattr(self.model.input.variables, variable_name, normalized_file_name)
 
     def clear_spatial_attributes(self) -> None:
+        """
+        Clear cached spatial data on the domain component.
+        """
         self.coastline = None
         self.coastline_file = None
         self.extra_xy_files.clear()
