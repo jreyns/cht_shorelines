@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
-from typing import Any, List, Union
+from typing import Any
 
 import numpy as np
 
@@ -30,7 +30,7 @@ class Variables:
         self.tidefile = ""
         self.tideprofile = ""
         self.tidedx = 10
-        self.tiden: Union[List[float], str] = []
+        self.tiden: list[float] | str = []
         self.htide = 0
         self.vtide = 0
         self.refdep = 5
@@ -42,7 +42,7 @@ class Variables:
         self.ds0 = 100
         self.griddingmethod = 2
         self.d = 10
-        self.phif: Union[List[float], str] = []
+        self.phif: list[float] | str = []
         self.maxangle = 60
         self.preserveorientation = 0
         ## ------------------- simulation transport parameters --------------------
@@ -52,8 +52,8 @@ class Variables:
         self.qscalgr = 0.3
         self.d50 = 2.0e-4
         self.d90 = 3.0e-4
-        self.dgr: Union[List[float], str] = []
-        self.sedinput: Union[List[float], str] = []
+        self.dgr: list[float] | str = []
+        self.sedinput: list[float] | str = []
         self.multi = 0
         self.bedthick = 0.2
         self.bedwidth = 50
@@ -75,13 +75,13 @@ class Variables:
         self.n = 0.02
         self.acal = 0.2
         self.hmin = 0.1
-        self.sphimax: Union[List[float], str] = []
-        self.relaxationlength: Union[List[float], str] = []
+        self.sphimax: list[float] | str = []
+        self.relaxationlength: list[float] | str = []
         self.suppresshighangle = 0
         ## ------------------- simulation time steps & numerical-------------------
         self.tc = 1
         self.dt = 0
-        self.dtdune: Union[List[float], str] = []
+        self.dtdune: list[float] | str = []
         self.reftime = "2020-01-01"
         self.endofsimulation = "2040-01-01"
         self.twopoints = 1
@@ -92,43 +92,43 @@ class Variables:
         self.boundaryconditionend = "Fixed"
         self.cyclic = 0
         ## ------------------------ climate change impact -------------------------
-        self.ccslr: Union[List[float], str] = []
-        self.cchs: Union[List[float], str] = []
-        self.ccdir: Union[List[float], str] = []
+        self.ccslr: list[float] | str = []
+        self.cchs: list[float] | str = []
+        self.ccdir: list[float] | str = []
         ## ----------------------------- structures -------------------------------
         self.struct = 1
         self.ldbstructures = ""
-        self.xhard: Union[List[float], str] = []
-        self.yhard: Union[List[float], str] = []
-        self.structtype: List[str] = []
+        self.xhard: list[float] | str = []
+        self.yhard: list[float] | str = []
+        self.structtype: list[str] = []
         self.aw = 1.27
         self.awfixedhs = 5
         self.bypasscontrfac = 1
         self.bypassdistpwr = 1
         self.submerged = 0
-        self.groinelev: List[float] = []
+        self.groinelev: list[float] = []
         ## ------------- wave transmission over submerged breakwater --------------
         self.transmission = 0
         self.transmform = "angr"
         self.transmdir = 1
         self.transmfile = ""
-        self.transmbwdepth: List[float] = []
-        self.transmcrestheight: List[float] = []
-        self.transmslope: List[float] = []
-        self.transmcrestwidth: List[float] = []
+        self.transmbwdepth: list[float] = []
+        self.transmcrestheight: list[float] = []
+        self.transmslope: list[float] = []
+        self.transmcrestwidth: list[float] = []
         self.transmd50 = 1
         ## ------------------------- permeable structures -------------------------
         self.perm = 0
         self.ldbpermeable = ""
-        self.xperm: List[float] = []
-        self.yperm: List[float] = []
-        self.wavetransm: List[float] = [1]
-        self.qstransm: List[float] = [1]
+        self.xperm: list[float] = []
+        self.yperm: list[float] = []
+        self.wavetransm: list[float] = [1]
+        self.qstransm: list[float] = [1]
         ## ----------------------------- revetments -------------------------------
         self.revet = 1
         self.ldbrevetments = ""
-        self.xrevet: List[float] = []
-        self.yrevet: List[float] = []
+        self.xrevet: list[float] = []
+        self.yrevet: list[float] = []
         self.iterrev = 5
         self.critwidth = 5
         self.fillbeachatrevetment = 0
@@ -138,10 +138,10 @@ class Variables:
         self.kdform = "Kamphuis"
         self.rotfac = 1
         self.omegat = 1
-        self.diffdist: List[float] = []
+        self.diffdist: list[float] = []
         self.diffsmooth = 0
         self.maxanglerotation = 90.1
-        self.diffractiondist: List[float] = []
+        self.diffractiondist: list[float] = []
         ## ---------------------------- nourishments ------------------------------
         self.nourish = 0
         self.growth = 1
@@ -159,7 +159,7 @@ class Variables:
         self.temp = 10
         self.mb = -0.5
         self.labda0 = 0.56e-6
-        self.k: List[float] = []
+        self.k: list[float] = []
         ## -------------------------- sources and Sinks ---------------------------
         self.sourcessinks = ""
         self.ssfile = ""
@@ -169,7 +169,7 @@ class Variables:
         self.kf = 0.02
         self.cs = 5e-4
         self.cstill = 5e-6
-        self.xtill: List[List[float]] = []
+        self.xtill: list[list[float]] = []
         self.perctill = 80
         self.d50r = 2.5e-4
         self.rhoa = 1.225
@@ -204,9 +204,9 @@ class Variables:
         ##------------------------- Sediment limitations --------------------------
         self.sedlim = False
         self.ldbsedlim = ""
-        self.xsedlim: List[float] = []
-        self.ysedlim: List[float] = []
-        self.widthsedlim: List[float] = []
+        self.xsedlim: list[float] = []
+        self.ysedlim: list[float] = []
+        self.widthsedlim: list[float] = []
         self.psedlim = 0
         ## --------------------------- mud properties -----------------------------
         self.mud = False
@@ -251,21 +251,21 @@ class Variables:
         ## ----------------------------- flood delta ------------------------------
         self.flooddelta = False
         self.ldbflood: str = ""
-        self.xfloodpol: List[float] = []
-        self.yfloodpol: List[float] = []
+        self.xfloodpol: list[float] = []
+        self.yfloodpol: list[float] = []
         self.ldbspit = ""
-        self.xspitpol: List[float] = []
-        self.yspitpol: List[float] = []
+        self.xspitpol: list[float] = []
+        self.yspitpol: list[float] = []
         self.dxf = 50
         self.overdepth = 2
         ## ------------------------ formatting / plotting -------------------------
         self.plotvisible = True
-        self.xlimits: List[float] = []
-        self.ylimits: List[float] = []
-        self.xywave: List[float] = []
+        self.xlimits: list[float] = []
+        self.ylimits: list[float] = []
+        self.xywave: list[float] = []
         self.xyoffset = [0, 0]
-        self.pauselength: List[float] = []
-        self.ldbplot: List[str] = []
+        self.pauselength: list[float] = []
+        self.ldbplot: list[str] = []
         self.ploths = 0
         self.plotdir = 0
         self.plotqs = 0
@@ -287,7 +287,7 @@ class Variables:
         self.xyout = []
         self.xyprofiles = []
         self.storageinterval = 50
-        self.storagedate: List[str] = []
+        self.storagedate: list[str] = []
         self.netcdf = 0
         self.separatepgrids = 1
         ## -------------------------- extract shorelines --------------------------
